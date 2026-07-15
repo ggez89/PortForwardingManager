@@ -10,15 +10,15 @@ using System.Diagnostics;
 
 namespace PortForwardingService.qBittorrent;
 
-public class QbittorrentManager: IDisposable {
+public sealed class QbittorrentManager: IDisposable {
 
     private static readonly Logger   LOGGER                      = LogManager.GetLogger(typeof(QbittorrentManager).FullName!);
     private static readonly TimeSpan SOCKET_ERROR_CHECK_INTERVAL = TimeSpan.FromMinutes(3);
 
-    private readonly qBittorrentClient       qBittorrentClient                    = new qBittorrentHttpClient();
-    private readonly ListeningPortEditor     configurationFileListeningPortEditor = new ConfigurationFileListeningPortEditor();
-    private readonly ListeningPortEditor     webApiListeningPortEditor;
-    private readonly PiaForwardedPortMonitor piaForwardedPortMonitor;
+    private readonly qBittorrentClient                    qBittorrentClient                    = new qBittorrentApiClient();
+    private readonly ConfigurationFileListeningPortEditor configurationFileListeningPortEditor = new();
+    private readonly WebApiListeningPortEditor            webApiListeningPortEditor;
+    private readonly PiaForwardedPortMonitor              piaForwardedPortMonitor;
 
     private Timer? timer;
 
@@ -27,19 +27,17 @@ public class QbittorrentManager: IDisposable {
         webApiListeningPortEditor    = new WebApiListeningPortEditor(qBittorrentClient);
     }
 
-    public Task<ushort?> getQbittorrentConfigurationListeningPort() => configurationFileListeningPortEditor.getListeningPort();
+    private ListeningPortEditor activeListeningPortEditor => isQbittorrentRunning()
+        ? webApiListeningPortEditor
+        : configurationFileListeningPortEditor;
 
-    public async Task setQbittorrentListeningPort(ushort listeningPort) {
-        ListeningPortEditor listeningPortEditor = isQbittorrentRunning()
-            ? webApiListeningPortEditor
-            : configurationFileListeningPortEditor;
+    public Task<ushort?> getQbittorrentConfigurationListeningPort() => activeListeningPortEditor.getListeningPort();
 
-        await listeningPortEditor.setListeningPort(listeningPort);
-    }
+    public async Task setQbittorrentListeningPort(ushort listeningPort) => await activeListeningPortEditor.setListeningPort(listeningPort);
 
     public static string? findExecutableAbsoluteFilename() {
         if (Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\qBittorrent", "DisplayIcon", null) is not string displayIcon) return null;
-        string filename = Path.GetFullPath(displayIcon.TrimEnd("1234567890").TrimEnd('-').TrimEnd(',').Trim('"').ToString());
+        string filename = Path.GetFullPath(displayIcon.TrimEnd("1234567890".AsEnumerable()).TrimEnd('-').TrimEnd(',').Trim('"'));
         return File.Exists(filename) ? filename : null;
     }
 
@@ -49,7 +47,9 @@ public class QbittorrentManager: IDisposable {
             process.Dispose();
         }
 
-        return qBittorrentProcesses.Length > 0;
+        bool isRunning = qBittorrentProcesses.Length > 0;
+        LOGGER.Debug("qBittorrent is currently {running}", isRunning ? "running" : "not running");
+        return isRunning;
     }
 
     public void listenForSocketErrors() {

@@ -74,10 +74,7 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="app.manifest" />
-    <None Include="Logging\NLog.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>.\%(Filename)%(Extension)</Link>
-    </None>
+    <None Include="Logging\NLog.config" CopyToOutputDirectory="PreserveNewest" TargetPath=".\%(Filename)%(Extension)" />
     <None Include="packages.lock.json" />
   </ItemGroup>
   <ItemGroup>
@@ -90,19 +87,19 @@
       <Version>2.5.2</Version>
     </PackageReference>
     <PackageReference Include="KoKo">
-      <Version>2.3.0</Version>
+      <Version>2.4.0-beta.1</Version>
     </PackageReference>
     <PackageReference Include="NLog">
-      <Version>5.5.1</Version>
+      <Version>6.1.4</Version>
     </PackageReference>
     <PackageReference Include="Plugins">
-      <Version>0.0.0-beta.5</Version>
+      <Version>0.0.0-beta.8</Version>
     </PackageReference>
     <PackageReference Include="PortForwardingService.Abstractions">
       <Version>0.0.1</Version>
     </PackageReference>
     <PackageReference Include="qBittorrentApiClient">
-      <Version>0.0.2</Version>
+      <Version>0.0.5</Version>
     </PackageReference>
     <PackageReference Include="System.Memory">
       <Version>4.6.3</Version>
@@ -111,7 +108,7 @@
       <Version>4.6.3</Version>
     </PackageReference>
     <PackageReference Include="Unfucked">
-      <Version>0.0.1-beta.32</Version>
+      <Version>0.0.1-beta.49</Version>
     </PackageReference>
     <PackageReference Include="WindowsFirewallHelper">
       <Version>2.2.0.86</Version>

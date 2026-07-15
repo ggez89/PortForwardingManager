@@ -4,16 +4,14 @@ using KoKo.Property;
 using NLog;
 using PortForwardingService.qBittorrent;
 using System.Diagnostics;
-using Unfucked;
 using WindowsFirewallHelper;
 
 namespace PortForwardingService.PrivateInternetAccess;
 
-public class PiaForwardedPortMonitor: IDisposable {
+public sealed class PiaForwardedPortMonitor: IDisposable {
 
-    private static readonly Logger LOGGER = LogManager.GetLogger(typeof(PiaForwardedPortMonitor).FullName!);
-
-    private static readonly string PiaCtlPath = Environment.ExpandEnvironmentVariables(@"%programfiles%\Private Internet Access\piactl.exe");
+    private static readonly Logger LOGGER      = LogManager.GetLogger(typeof(PiaForwardedPortMonitor).FullName!);
+    private static readonly string PIACTL_PATH = Environment.ExpandEnvironmentVariables(@"%programfiles%\Private Internet Access\piactl.exe");
 
     public Property<ushort?> forwardedPort => piaForwardedPort;
     private readonly StoredProperty<ushort?> piaForwardedPort = new();
@@ -28,7 +26,7 @@ public class PiaForwardedPortMonitor: IDisposable {
         Task.Run(() => {
             isShutDown = false;
 
-            ProcessStartInfo startInfo = new(PiaCtlPath) {
+            ProcessStartInfo startInfo = new(PIACTL_PATH) {
                 Arguments              = "monitor portforward",
                 RedirectStandardOutput = true,
                 UseShellExecute        = false,
@@ -55,6 +53,7 @@ public class PiaForwardedPortMonitor: IDisposable {
     }
 
     private void onPiaMonitorOutput(object sender, DataReceivedEventArgs args) {
+        if (isShutDown) return;
         try {
             piaForwardedPort.Value = parseForwardedPort(args.Data);
         } catch (PrivateInternetAccessException.PortForwardingFailed) {
@@ -68,6 +67,7 @@ public class PiaForwardedPortMonitor: IDisposable {
 
     /// <exception cref="PrivateInternetAccessException"></exception>
     private static ushort parseForwardedPort(string rawValue) {
+        LOGGER.Trace("Parsing forwarded port {raw}", rawValue);
         switch (rawValue) {
             case "Inactive":
             case "Attempting":
@@ -75,6 +75,9 @@ public class PiaForwardedPortMonitor: IDisposable {
                 throw new PrivateInternetAccessException.PortForwardingDisabled();
             case "Failed":
                 throw new PrivateInternetAccessException.PortForwardingFailed();
+            case "NULL":
+                LOGGER.Warn("piactl reported forwarded port NULL because it is shutting down, this should have been ignored.");
+                throw new PrivateInternetAccessException.UnknownForwardedPort();
             default:
                 try {
                     return Convert.ToUInt16(rawValue);
@@ -100,11 +103,11 @@ public class PiaForwardedPortMonitor: IDisposable {
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        if ((await Processes.ExecFile(PiaCtlPath, "connect")).ExitCode != 0) return;
+        if ((await Process.ExecFile(PIACTL_PATH, "connect")).ExitCode != 0) return;
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        ProcessResult getPortForwardProcess = await Processes.ExecFile(PiaCtlPath, "get portforward");
+        ProcessResult getPortForwardProcess = await Process.ExecFile(PIACTL_PATH, "get portforward");
         if (getPortForwardProcess.ExitCode != 0) return;
         try {
             parseForwardedPort(getPortForwardProcess.StdOut);
@@ -117,7 +120,8 @@ public class PiaForwardedPortMonitor: IDisposable {
     }
 
     public void Dispose() {
-        isShutDown = true;
+        isShutDown                            =  true;
+        piaMonitorProcess?.OutputDataReceived -= onPiaMonitorOutput;
         piaMonitorProcess?.Kill();
         piaMonitorProcess?.Dispose();
         piaMonitorProcess = null;

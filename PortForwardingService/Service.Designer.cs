@@ -1,6 +1,7 @@
-﻿namespace PortForwardingService
+namespace PortForwardingService
 {
-    partial class Service
+
+    sealed partial class Service
     {
         /// <summary> 
         /// Required designer variable.

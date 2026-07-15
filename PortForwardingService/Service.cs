@@ -9,13 +9,13 @@ using System.ServiceProcess;
 
 namespace PortForwardingService;
 
-public partial class Service: ServiceBase {
+public sealed partial class Service: ServiceBase {
 
     private static readonly Logger LOGGER = LogManager.GetLogger(typeof(Service).FullName!);
 
     private readonly PiaForwardedPortMonitor                      piaForwardedPortMonitor = new();
     private readonly QbittorrentManager                           qBittorrentManager;
-    private readonly IPluginManager<IPortForwardingServicePlugin> pluginManager = new PluginManager<IPortForwardingServicePlugin>("plugins");
+    private readonly IPluginManager<IPortForwardingServicePlugin> pluginManager = new PluginManager<IPortForwardingServicePlugin>("plugins", true);
 
     public Service() {
         qBittorrentManager = new QbittorrentManager(piaForwardedPortMonitor);
@@ -26,16 +26,23 @@ public partial class Service: ServiceBase {
         pluginManager.LoadAll();
 
         piaForwardedPortMonitor.forwardedPort.PropertyChanged += async (_, eventArgs) => {
-            LOGGER.Info("PIA forwarded port changed to {newPort}", eventArgs.NewValue?.ToString() ?? "null");
+            try {
+                LOGGER.Info("PIA forwarded port changed to {newPort}", eventArgs.NewValue?.ToString() ?? "null");
 
-            ushort? qBittorrentListeningPort = await qBittorrentManager.getQbittorrentConfigurationListeningPort();
+                ushort? qBittorrentListeningPort = await qBittorrentManager.getQbittorrentConfigurationListeningPort();
 
-            if (eventArgs.NewValue is {} piaForwardedPort && piaForwardedPort != qBittorrentListeningPort) {
-                await qBittorrentManager.setQbittorrentListeningPort(piaForwardedPort);
-            }
+                if (eventArgs.NewValue is {} piaForwardedPort && piaForwardedPort != qBittorrentListeningPort) {
+                    LOGGER.Debug("Changing qBittorrent listening port from {oldPort} to {newPort}", qBittorrentListeningPort, piaForwardedPort);
+                    await qBittorrentManager.setQbittorrentListeningPort(piaForwardedPort);
+                } else {
+                    LOGGER.Debug("qBittorrent listening port was already set to {port}", eventArgs.NewValue);
+                }
 
-            foreach (IPortForwardingServicePlugin plugin in pluginManager.Plugins) {
-                plugin.OnForwardedPortChanged(eventArgs.NewValue, eventArgs.OldValue);
+                foreach (IPortForwardingServicePlugin plugin in pluginManager.Plugins) {
+                    plugin.OnForwardedPortChanged(eventArgs.NewValue, eventArgs.OldValue);
+                }
+            } catch (Exception e) when (e is not OutOfMemoryException) {
+                LOGGER.Error(e, "Uncaught exception handling PIA forwarded port change");
             }
         };
 
@@ -53,12 +60,8 @@ public partial class Service: ServiceBase {
         LogManager.Shutdown();
     }
 
-    internal void onStart(string[] args) {
-        OnStart(args);
-    }
+    internal void onStart(string[] args) => OnStart(args);
 
-    internal void onStop() {
-        OnStop();
-    }
+    internal void onStop() => OnStop();
 
 }
