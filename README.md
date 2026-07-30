@@ -1,7 +1,7 @@
-![PortForwardingService](https://github.com/Aldaviva/PortForwardingManager/raw/master/PortForwardingService/pifmgr_30.ico) PortForwardingService
+![PortForwardingService](https://github.com/ggez89/PortForwardingManager/raw/master/PortForwardingService/pifmgr_30.ico) PortForwardingService
 ===
 
-[![Download count](https://img.shields.io/github/downloads/Aldaviva/PortForwardingManager/total?logo=github)](https://github.com/Aldaviva/PortForwardingManager/releases)
+> **Note**: This is a fork of [Aldaviva/PortForwardingManager](https://github.com/Aldaviva/PortForwardingManager) by [ggez89](https://github.com/ggez89) that adds support for qBittorrent WebUI authentication via a local configuration file, removing the need to bypass authentication for localhost clients.
 
 Integrate the [qBittorrent](https://www.qbittorrent.org) BitTorrent client with the [Private Internet Access (PIA)](https://www.privateinternetaccess.com/) virtual private network service.
 
@@ -30,7 +30,7 @@ Integrate the [qBittorrent](https://www.qbittorrent.org) BitTorrent client with 
 - [Private Internet Access desktop client](https://www.privateinternetaccess.com/download/windows-vpn)
 
 ## Installation
-1. Download [`PortForwardingService.zip`](https://github.com/Aldaviva/PortForwardingManager/releases/latest/download/PortForwardingService.zip) from the [latest release](https://github.com/Aldaviva/PortForwardingManager/releases/latest).
+1. Download [`PortForwardingService.zip`](https://github.com/ggez89/PortForwardingManager/releases/latest/download/PortForwardingService.zip) from the [latest release](https://github.com/ggez89/PortForwardingManager/releases/latest).
 1. Extract the ZIP file to a directory such as `C:\Program Files\PortForwardingService\`.
     - If you are upgrading an existing installation, don't overwrite `NLog.config` if you have previously modified it, or else your changes will be lost.
 1. In an elevated PowerShell terminal, run
