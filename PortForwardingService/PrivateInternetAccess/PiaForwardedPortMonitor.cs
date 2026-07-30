@@ -4,6 +4,7 @@ using KoKo.Property;
 using NLog;
 using PortForwardingService.qBittorrent;
 using System.Diagnostics;
+using Unfucked;
 using WindowsFirewallHelper;
 
 namespace PortForwardingService.PrivateInternetAccess;
@@ -103,11 +104,11 @@ public sealed class PiaForwardedPortMonitor: IDisposable {
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        if ((await Process.ExecFile(PIACTL_PATH, "connect")).ExitCode != 0) return;
+        if ((await Processes.ExecFile(PIACTL_PATH, new[] { "connect" })).ExitCode != 0) return;
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        ProcessResult getPortForwardProcess = await Process.ExecFile(PIACTL_PATH, "get portforward");
+        ProcessResult getPortForwardProcess = await Processes.ExecFile(PIACTL_PATH, new[] { "get", "portforward" });
         if (getPortForwardProcess.ExitCode != 0) return;
         try {
             parseForwardedPort(getPortForwardProcess.StdOut);
@@ -120,11 +121,13 @@ public sealed class PiaForwardedPortMonitor: IDisposable {
     }
 
     public void Dispose() {
-        isShutDown                            =  true;
-        piaMonitorProcess?.OutputDataReceived -= onPiaMonitorOutput;
-        piaMonitorProcess?.Kill();
-        piaMonitorProcess?.Dispose();
-        piaMonitorProcess = null;
+        isShutDown = true;
+        if (piaMonitorProcess != null) {
+            piaMonitorProcess.OutputDataReceived -= onPiaMonitorOutput;
+            piaMonitorProcess.Kill();
+            piaMonitorProcess.Dispose();
+            piaMonitorProcess = null;
+        }
         stdoutReaderLock.Dispose();
     }
 

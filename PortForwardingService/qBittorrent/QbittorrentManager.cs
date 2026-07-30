@@ -7,6 +7,7 @@ using PortForwardingService.qBittorrent.ListeningPortEditors;
 using qBittorrent.Client;
 using qBittorrent.Client.Data;
 using System.Diagnostics;
+using System.Net;
 
 namespace PortForwardingService.qBittorrent;
 
@@ -15,7 +16,12 @@ public sealed class QbittorrentManager: IDisposable {
     private static readonly Logger   LOGGER                      = LogManager.GetLogger(typeof(QbittorrentManager).FullName!);
     private static readonly TimeSpan SOCKET_ERROR_CHECK_INTERVAL = TimeSpan.FromMinutes(3);
 
-    private readonly qBittorrentClient                    qBittorrentClient                    = new qBittorrentApiClient();
+    private readonly QbittorrentConfig                    config;
+    private readonly CookieContainer                      cookieContainer;
+    private readonly HttpClientHandler                    httpClientHandler;
+    private readonly HttpClient                            httpClient;
+    private readonly qBittorrentHttpTransport              transport;
+    private readonly qBittorrentClient                    qBittorrentClient;
     private readonly ConfigurationFileListeningPortEditor configurationFileListeningPortEditor = new();
     private readonly WebApiListeningPortEditor            webApiListeningPortEditor;
     private readonly PiaForwardedPortMonitor              piaForwardedPortMonitor;
@@ -24,7 +30,44 @@ public sealed class QbittorrentManager: IDisposable {
 
     public QbittorrentManager(PiaForwardedPortMonitor piaForwardedPortMonitor) {
         this.piaForwardedPortMonitor = piaForwardedPortMonitor;
-        webApiListeningPortEditor    = new WebApiListeningPortEditor(qBittorrentClient);
+        config = QbittorrentConfig.Load();
+
+        cookieContainer = new CookieContainer();
+        httpClientHandler = new HttpClientHandler { CookieContainer = cookieContainer };
+        Uri baseUri = new Uri(config.Url.EndsWith("/") ? config.Url : config.Url + "/");
+        httpClient = new HttpClient(httpClientHandler) { BaseAddress = baseUri };
+
+        transport = new qBittorrentHttpTransport(baseUri) { httpClient = httpClient };
+        qBittorrentClient = new qBittorrentApiClient(transport);
+
+        webApiListeningPortEditor = new WebApiListeningPortEditor(qBittorrentClient, ensureLoggedIn);
+    }
+
+    public async Task<bool> ensureLoggedIn() {
+        if (string.IsNullOrEmpty(config.Username) && string.IsNullOrEmpty(config.Password)) {
+            return true;
+        }
+
+        try {
+            var content = new FormUrlEncodedContent(new[] {
+                new KeyValuePair<string, string>("username", config.Username ?? string.Empty),
+                new KeyValuePair<string, string>("password", config.Password ?? string.Empty)
+            });
+
+            HttpResponseMessage response = await httpClient.PostAsync("api/v2/auth/login", content);
+            string responseText = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode && responseText.Trim().Equals("Ok.", StringComparison.OrdinalIgnoreCase)) {
+                LOGGER.Debug("Successfully authenticated with qBittorrent Web API.");
+                return true;
+            } else {
+                LOGGER.Warn("Failed to authenticate with qBittorrent Web API. Status: {status}, Response: {response}", response.StatusCode, responseText);
+                return false;
+            }
+        } catch (Exception e) {
+            LOGGER.Warn(e, "Exception while attempting to authenticate with qBittorrent Web API.");
+            return false;
+        }
     }
 
     private ListeningPortEditor activeListeningPortEditor => isQbittorrentRunning()
@@ -56,6 +99,7 @@ public sealed class QbittorrentManager: IDisposable {
         timer = new Timer(async void (_) => {
             if (isQbittorrentRunning()) {
                 try {
+                    await ensureLoggedIn();
                     TransferInfo transferInfo = await qBittorrentClient.getTransferInfo();
 
                     if (transferInfo.connectionStatus != TransferInfo.ConnectionStatus.CONNECTED && piaForwardedPortMonitor.forwardedPort.Value is {} correctListeningPort) {
@@ -82,6 +126,8 @@ public sealed class QbittorrentManager: IDisposable {
     public void Dispose() {
         timer?.Dispose();
         qBittorrentClient.Dispose();
+        httpClient.Dispose();
+        httpClientHandler.Dispose();
     }
 
 }
