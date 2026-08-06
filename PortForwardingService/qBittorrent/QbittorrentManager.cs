@@ -8,6 +8,7 @@ using qBittorrent.Client;
 using qBittorrent.Client.Data;
 using System.Diagnostics;
 using System.Net;
+using Unfucked.HTTP;
 
 namespace PortForwardingService.qBittorrent;
 
@@ -35,7 +36,7 @@ public sealed class QbittorrentManager: IDisposable {
         cookieContainer = new CookieContainer();
         httpClientHandler = new HttpClientHandler { CookieContainer = cookieContainer };
         Uri baseUri = new Uri(config.Url.EndsWith("/") ? config.Url : config.Url + "/");
-        httpClient = new HttpClient(httpClientHandler) { BaseAddress = baseUri };
+        httpClient = new UnfuckedHttpClient(httpClientHandler) { BaseAddress = baseUri };
 
         transport = new qBittorrentHttpTransport(baseUri) { httpClient = httpClient };
         qBittorrentClient = new qBittorrentApiClient(transport);

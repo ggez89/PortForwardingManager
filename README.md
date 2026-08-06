@@ -56,7 +56,7 @@ Integrate the [qBittorrent](https://www.qbittorrent.org) BitTorrent client with 
         - If you're not sure which interface PIA is providing, open `ncpa.cpl` and rename the active connection that uses the Private Internet Access Network Adapter to a recognizable name like "PIA".
     1. Enable Web UI › Web User Interface.
     1. Set Web UI › Port to 8080.
-    1. Set Web UI › Username and Password (optional, if Web UI authentication is enabled).
+    1. Set Web UI › Username and Password (optional, if Web UI authentication is enabled, configure these in `%appdata%\PortForwardingService\config.ini`).
     1. Disable Web UI › Use UPnP / NAT-PMP to forward the port from my router.
     1. Disable Web UI › Use HTTPS instead of HTTP.
     1. Ensure the PIA forwarded port appears in qBittorrent › Connection › Listening Port. If it doesn't, try restarting Port Forwarding Service.

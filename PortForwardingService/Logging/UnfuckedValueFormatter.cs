@@ -14,7 +14,7 @@ namespace PortForwardingService.Logging;
 internal sealed class UnfuckedValueFormatter(IValueFormatter parent): IValueFormatter {
 
     public static void register() {
-        ServiceRepository services = LogManager.Configuration!.LogFactory.ServiceRepository;
+        ServiceRepository services = LogManager.LogFactory.ServiceRepository;
         services.RegisterService(typeof(IValueFormatter), new UnfuckedValueFormatter((IValueFormatter) services.GetService(typeof(IValueFormatter))));
     }
 
