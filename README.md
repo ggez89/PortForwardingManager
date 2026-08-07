@@ -1,5 +1,6 @@
 ![PortForwardingService](https://github.com/ggez89/PortForwardingManager/raw/master/PortForwardingService/pifmgr_30.ico) PortForwardingService
 ===
+[![Downloads](https://img.shields.io/github/downloads/ggez89/PortForwardingManager/total?color=blue&label=downloads)](https://github.com/ggez89/PortForwardingManager/releases)
 
 > **Note**: This is a fork of [Aldaviva/PortForwardingManager](https://github.com/Aldaviva/PortForwardingManager) by [ggez89](https://github.com/ggez89) that adds support for qBittorrent WebUI authentication via a local configuration file, removing the need to bypass authentication for localhost clients.
 
