@@ -32,10 +32,10 @@ public sealed partial class Service: ServiceBase {
                 ushort? qBittorrentListeningPort = await qBittorrentManager.getQbittorrentConfigurationListeningPort();
 
                 if (eventArgs.NewValue is {} piaForwardedPort && piaForwardedPort != qBittorrentListeningPort) {
-                    LOGGER.Debug("Changing qBittorrent listening port from {oldPort} to {newPort}", qBittorrentListeningPort, piaForwardedPort);
+                    LOGGER.Info("Changing qBittorrent listening port from {oldPort} to {newPort}", qBittorrentListeningPort, piaForwardedPort);
                     await qBittorrentManager.setQbittorrentListeningPort(piaForwardedPort);
                 } else {
-                    LOGGER.Debug("qBittorrent listening port was already set to {port}", eventArgs.NewValue);
+                    LOGGER.Info("qBittorrent listening port was already set to {port}", eventArgs.NewValue);
                 }
 
                 foreach (IPortForwardingServicePlugin plugin in pluginManager.Plugins) {

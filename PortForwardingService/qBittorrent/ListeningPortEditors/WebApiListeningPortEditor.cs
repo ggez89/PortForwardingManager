@@ -11,7 +11,7 @@ internal sealed class WebApiListeningPortEditor(qBittorrentClient client, Func<T
     private static readonly Logger LOGGER = LogManager.GetLogger(typeof(WebApiListeningPortEditor).FullName!);
 
     public async Task setListeningPort(ushort listeningPort) {
-        LOGGER.Debug("Setting qBittorrent listening port to {listeningPort} using Web API.", listeningPort);
+        LOGGER.Info("Setting qBittorrent listening port to {listeningPort} using Web API.", listeningPort);
         if (ensureLoggedIn != null) {
             await ensureLoggedIn();
         }

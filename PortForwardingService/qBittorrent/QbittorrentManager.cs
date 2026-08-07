@@ -50,6 +50,7 @@ public sealed class QbittorrentManager: IDisposable {
         }
 
         try {
+            LOGGER.Info("Authenticating with qBittorrent Web API at {url}...", config.Url);
             var content = new FormUrlEncodedContent(new[] {
                 new KeyValuePair<string, string>("username", config.Username ?? string.Empty),
                 new KeyValuePair<string, string>("password", config.Password ?? string.Empty)
@@ -59,14 +60,14 @@ public sealed class QbittorrentManager: IDisposable {
             string responseText = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode && responseText.Trim().Equals("Ok.", StringComparison.OrdinalIgnoreCase)) {
-                LOGGER.Debug("Successfully authenticated with qBittorrent Web API.");
+                LOGGER.Info("Successfully authenticated with qBittorrent Web API.");
                 return true;
             } else {
-                LOGGER.Warn("Failed to authenticate with qBittorrent Web API. Status: {status}, Response: {response}", response.StatusCode, responseText);
+                LOGGER.Error("Failed to authenticate with qBittorrent Web API. Status: {status}, Response: {response}", response.StatusCode, responseText);
                 return false;
             }
         } catch (Exception e) {
-            LOGGER.Warn(e, "Exception while attempting to authenticate with qBittorrent Web API.");
+            LOGGER.Error(e, "Exception while attempting to authenticate with qBittorrent Web API.");
             return false;
         }
     }
