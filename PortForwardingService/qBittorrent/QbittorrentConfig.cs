@@ -14,7 +14,7 @@ namespace PortForwardingService.qBittorrent;
 public sealed class QbittorrentConfig {
 
     private static readonly Logger LOGGER = LogManager.GetLogger(typeof(QbittorrentConfig).FullName!);
-    public static readonly string CONFIGURATION_FILE_PATH = Environment.ExpandEnvironmentVariables(@"%appdata%\PortForwardingService\config.ini");
+    public static readonly string CONFIGURATION_FILE_PATH = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.ini");
 
     private const string SECTION_NAME = "qBittorrent";
     private const string USERNAME_KEY = "Username";
